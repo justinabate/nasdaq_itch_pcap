@@ -11,21 +11,27 @@ NASDAQ offers sample PCAP files at **ftp://emi.nasdaq.com/ITCH/** (herein "root"
   - Protocol: [PSX TotalView-ITCH 5.0](https://nasdaqtrader.com/content/technicalsupport/specifications/dataproducts/PSXTVITCHSpecification.pdf)
 
 
-The PCAP files in these GZ archives don't follow the standard [libpcap format](https://gitlab.com/wireshark/wireshark/-/wikis/Development/LibpcapFileFormat) (no global header, etc.). Instead, they follow [NASDAQ's BinaryFILE format](https://www.nasdaqtrader.com/content/technicalsupport/specifications/dataproducts/binaryfile.pdf): each PCAP is a just a binary file with order-by-order data for the trading session indicated in the filename. There are no headers, each file is just a set of *messages*, where each message has a length field and a payload field:<br>
+The PCAPs in these GZIPs aren't standard [libpcap files](https://gitlab.com/wireshark/wireshark/-/wikis/Development/LibpcapFileFormat) (no global header, etc.), so unfortunately they can't be opened with Wireshark. If they were standard PCAPs, they could be dissected using one of the [Open Markets Initiative Wireshark Lua scripts](https://github.com/Open-Markets-Initiative/wireshark-lua).
+
+Instead, the PCAPs are formatted per [NASDAQ's BinaryFILE specification](https://www.nasdaqtrader.com/content/technicalsupport/specifications/dataproducts/binaryfile.pdf): each file contains *messages* with order-by-order data for the trading session indicated in the filename. Each message has a length field and a payload field:<br>
 ![image](https://user-images.githubusercontent.com/18313961/124309418-afdbc800-db38-11eb-9302-c286c5d1c59c.png)
 
 
+## py/
+### pyxxd.py
+Hex dump a PCAP file, given its location, the word size (bytes), number of lines to read, and byte order (l or b).
 
-## Wireshark
-The PCAPs can be opened in Wireshark using one of Open Markets Initiative's [Lua](https://gitlab.com/wireshark/wireshark/-/wikis/Lua/) dissector scripts:
-1. [NASDAQ ITCH 5.0](https://github.com/Open-Markets-Initiative/wireshark-lua/blob/master/Nasdaq/Nasdaq.Equities.TotalView.Itch.v5.0.Script.Dissector.lua)
-2. [BX ITCH 5.0](https://github.com/Open-Markets-Initiative/wireshark-lua/blob/master/Nasdaq/Nasdaq.Bx.Equities.TotalView.Itch.v5.0.Script.Dissector.lua)
-3. [PSX ITCH 5.0](https://github.com/Open-Markets-Initiative/wireshark-lua/blob/master/Nasdaq/Nasdaq.Psx.TotalView.Itch.v5.0.Script.Dissector.lua)
+```
+$ python pyxxd.py 01302019.NASDAQ_ITCH50.pcap 8 5 b
+```
+```
+byte offst |  0  1  2  3  4  5  6  7 | 0 1 2 3 4 5 6 7
+------------------------------------------------------
+0x00000000 | 00 0c 53 00 00 00 00 0a | . . S . . . . .
+0x00000008 | 0a 60 aa db 93 4f 00 27 | . . . . . O . .
+0x00000010 | 52 00 01 00 00 0a 4a 4c | R . . . . . J L
+0x00000018 | ee 55 99 41 20 20 20 20 | . U . A . . . .
+0x00000020 | 20 20 20 4e 20 00 00 00 | . . . N . . . .
+```
 
-Download the Lua scripts, then in Wireshark, click Help –> About Wireshark –> Folders: place the downloaded files in the directory corresponding to "Personal Lua Plugins". After placing the Lua scripts there, click Analyze -> Reload Lua Plugins. Then, click Analyze -> Enabled Protocols. A search for "itch" should return entries for the 3 TotalView ITCH dissectors.
-
-Unfortunately, I'm not able to open the PCAPs using these dissectors, but I've filed a [github issue](https://github.com/Open-Markets-Initiative/wireshark-lua/issues/29) for clarification
-
-
-## Python
-In the files I've looked at, the payload length for the first message is 0x000c. This is is the Code "O" System Event Message [1, Sect. 4.1] to indicate the trading session is starting.
+This dump shows the first message has a payload length 0x000c and the message type is "S" for System Event Message. Based on the Code "O" at offset 0xd, this is the start-of-day message (see [1], Sect. 4.1).
