@@ -1,5 +1,5 @@
 # nasdaq_itch_pcap
-Experiments with PCAP files from NASDAQ's public FTP server 
+Experiments with ITCH PCAP files from NASDAQ's public FTP server 
 
 ## Overview: Source Files, Format 
 NASDAQ offers sample PCAP files at **ftp://emi.nasdaq.com/ITCH/** (herein "root" or "~/"). This link can be opened in a file browser. Several variants are available, based on [the different NASDAQ data feeds](https://nasdaqtrader.com/Trader.aspx?id=dpspecs): 
